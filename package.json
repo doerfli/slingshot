@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "A mobile-first web game: flick a probe through gravity fields to reach a target.",
+  "license": "Apache-2.0",
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
