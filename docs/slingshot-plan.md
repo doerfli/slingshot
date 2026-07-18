@@ -29,21 +29,24 @@ predictor**.
 ## Status & Progress
 
 > **Update this section as work lands.** Legend: `[ ]` not started · `[~]` in progress · `[x]` done.
-> Current overall status: **Pre-implementation** — plan approved, repo is greenfield (no `package.json` yet).
+> Current overall status: **Phase 1 code complete** — all automated gates green (build, typecheck,
+> 18 tests). Remaining: human visual/gesture playtest on a phone (the one thing tests can't cover).
 
 **Last updated:** 2026-07-18
 
 ### Phase 1 — MVP
-- [ ] Scaffold (Vite + Svelte-TS + Vitest; `dev`/`test`/`build` green; empty canvas; portrait `index.html`)
-- [ ] `sim/vec` + `sim/gravity` (single body) + `sim/integrator.step` (TDD)
-- [ ] `sim/probe.launch` + `sim/collision`
-- [ ] `test/determinism.test.ts` passing
-- [ ] `render/camera` (fit-to-field, dpr, letterbox) + `render/draw` (body, pad, probe, trail)
-- [ ] `game/loop` (fixed-timestep accumulator)
-- [ ] `input/aim` + `sim/input-map` (pull-back drag → launch; heading arrow)
-- [ ] `sim/predict` + partial preview arc + `test/preview-matches-reality.test.ts`
-- [ ] Levels 1–3 (straight shot → the bend → around the world) + win/lose feedback + retry
-- [ ] **Milestone:** curving around the single body feels good; solved shot replays identically
+- [x] Scaffold (Vite + Svelte-TS + Vitest; `dev`/`test`/`build` green; portrait `index.html`)
+- [x] `sim/vec` + `sim/gravity` (multi-body sum, fixed order) + `sim/integrator.step` (TDD)
+- [x] `sim/probe.launch`/`advance` + `sim/collision`
+- [x] `test/determinism.test.ts` passing (bit-for-bit identical paths)
+- [x] `render/camera` (fit-to-field, dpr, letterbox) + `render/draw` (body, target, pad, probe, trail, preview, aim arrow)
+- [x] `game/loop` (fixed-timestep accumulator) + `game/state` store + `game/rules` (closest-approach)
+- [x] `input/aim` + `sim/input-map` (pull-back drag → launch; heading arrow)
+- [x] `sim/predict` + partial preview arc + `test/preview-matches-reality.test.ts`
+- [x] Levels 1–3 (straight shot → the bend → around the world) + win/lose/off-screen feedback + retry
+- [x] Real Svelte HUD (`App.svelte` + `ui/Hud.svelte`) wired via `game/state`
+- [x] Bonus: `test/solvable.test.ts` — proves each authored level has a winning launch
+- [ ] **Milestone (needs human):** confirm curving around the body *feels* good on a phone viewport
 
 ### Phase 2 — Breadth, HUD, scoring
 - [ ] Multi-body levels (corridor, slingshot) + hazards (`collision` hazard test)
@@ -62,6 +65,38 @@ predictor**.
 
 ### Change log
 - 2026-07-18 — Plan authored; toolchain (bun 1.3.14 + node 24 via mise) confirmed working.
+- 2026-07-18 — Phase 1 implemented end-to-end: scaffold, pure `sim/` core, `render/`, `game/`
+  loop+state+levels, `input/` drag-to-aim, `sim/predict` + partial preview, Svelte HUD.
+  Gates green: `bun run build`, `svelte-check` (0 errors), 18 Vitest tests (determinism,
+  collision, preview-matches-reality, level solvability). Pending: human phone playtest.
+- 2026-07-18 — Playtest tuning pass #1 (feedback: no visible deflection, tiny probe, thick
+  target rings). Root cause of "no bend": launch speed too high vs gravity — probe blew past
+  bodies. Fix: `MAX_SPEED` 420→210, `POWER_SCALE` 2.4→1.6, body strengths ~9× (L2 1.3M,
+  L3 1.8M). Verified with `scratch/analyze.ts`: at full-power ~206 u/s, L2 bends 34° / L3 37°,
+  sharper as power eases off. Visuals: bigger glowing probe + triangular idle ship on a launch
+  ring, thinner target rings, larger strength-scaled gravity influence halo.
+- 2026-07-18 — Tuning pass #2 (feedback: still too little bend). Stronger gravity: L2 1.3M→3.0M,
+  L3 1.8M→3.8M, L1→480k; `MAX_SPEED` 210→190, `POWER_SCALE` 1.6→1.5. Halo enlarged (cap
+  260→360). Verified: full-power turn L2 59° / L3 71°, up to ~200° at lower power; all solvable.
+- 2026-07-18 — Tuning pass #3 (feedback: only slightly bends on a mid-distance pass). Gravity
+  ~2× again: L2 3.0M→6.5M, L3 3.8M→8.0M, L1→800k; `MAX_SPEED` 190→170, `POWER_SCALE` 1.5→1.4;
+  halo cap 360→420. Verified: full-power turn L2 106° / L3 117°, ~200° at lower power; solvable.
+- 2026-07-18 — Tuning pass #4 (feedback: doesn't wrap when flying NEAR the planet; also too slow
+  at max). Real root cause: lethal radius too big — the fierce-gravity band was inside the crash
+  zone, so close passes crashed instead of wrapping. Shrank cores (L2 50→26, L3 66→34, L1→22),
+  same strengths; raised speed `MAX_SPEED` 170→260, `POWER_SCALE` 1.4→1.9. Verified: full-power
+  close-pass wrap L2 112° / L3 117°, snappy 257 u/s shots, all solvable.
+- 2026-07-18 — Portrait + selector pass. (a) Redesigned all 3 levels for a tall PORTRAIT field
+  (±300 × ±560), pad at bottom firing UP toward a top target — mobile-first. (b) Higher-speed
+  deflection: strengths L2 8M / L3 9.5M, `MAX_SPEED` 230, `POWER_SCALE` 1.7; bigger field ⇒ more
+  transit time ⇒ more bend. (c) Confirmed the probe *accelerates* near a body (×3.3 speed gain on
+  a close pass) — added a speed-scaled glow + motion streak so it's visible. (d) Added a top
+  `ui/LevelSelect.svelte` (numbered pills + level name) and a DEV toggle (also `?dev`) that
+  unlocks all levels; real sequential unlock-on-win otherwise. Gates green (0 errors, 18 tests).
+- 2026-07-18 — Balance pass (feedback: L1 too weak up close, L2/L3 too strong). Compressed the
+  strength spread: L1 900k→1.4M (straight-shot win still ~11°, but a close graze now bends 58°),
+  L2 8M→4.5M, L3 9.5M→5.5M (winning-shot bend 53°/61°, close wrap 102°/107° — loosened from
+  123–130°). All solvable (158/135/127 wins); 18 tests green.
 
 ---
 

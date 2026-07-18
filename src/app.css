@@ -1,0 +1,41 @@
+:root {
+  --bg: #0b1026;
+  --bg-2: #131a3a;
+  --ink: #e8ecff;
+  --ink-dim: #9aa3d0;
+  --accent: #6ad2ff;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+}
+
+/* The world canvas fills the viewport; the fit-to-field transform (render/camera)
+   letterboxes the level inside it so nothing clips across phone aspect ratios. */
+canvas.world {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none; /* let Pointer Events own the drag gesture */
+}

@@ -1,7 +1,20 @@
 {
   "permissions": {
     "allow": [
-      "Bash(bun --version)"
+      "Bash(bun:*)",
+      "Bash(node:*)",
+      "Bash(mise:*)",
+      "Bash(curl:*)",
+      "Bash(echo:*)",
+      "Bash(cat:*)",
+      "Bash(sleep:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(kill:*)",
+      "Bash(pkill:*)",
+      "Bash(export:*)",
+      "Bash(cd:*)",
+      "WebFetch(domain:github.com)"
     ]
   }
 }
