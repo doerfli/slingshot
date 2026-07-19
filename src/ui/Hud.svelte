@@ -1,11 +1,13 @@
 <script lang="ts">
   import type { Game } from '../game/loop';
-  import { hud } from '../game/state';
+  import { hud, type PreviewMode } from '../game/state';
 
   let { game }: { game: Game } = $props();
 
-  // Round the near-miss distance for display.
-  const missText = (d: number | null) => (d == null ? '' : `${Math.round(d)} away`);
+  // Preview length is the game's main difficulty lever (spec §7) and doubles as an
+  // accessibility aid (full preview). Cycle partial → full → none.
+  const NEXT: Record<PreviewMode, PreviewMode> = { partial: 'full', full: 'none', none: 'partial' };
+  const LABEL: Record<PreviewMode, string> = { partial: 'Partial', full: 'Full', none: 'None' };
 </script>
 
 <!-- Top-right attempts. Non-interactive, so it never eats the drag gesture.
@@ -16,34 +18,18 @@
   </div>
 </div>
 
-<!-- Result banner + actions. Only interactive when a shot has resolved. -->
-{#if $hud.status === 'won'}
-  <div class="banner win">
-    <div class="headline">Target reached</div>
-    <div class="sub">in {$hud.attempts} {$hud.attempts === 1 ? 'try' : 'tries'}</div>
-    <div class="actions">
-      <button onclick={() => game.restartLevel()}>Replay</button>
-      {#if $hud.levelIndex < $hud.levelCount - 1}
-        <button class="primary" onclick={() => game.nextLevel()}>Next →</button>
-      {/if}
-    </div>
-  </div>
-{:else if $hud.status === 'lost'}
-  <div class="banner lose">
-    <div class="headline">
-      {$hud.lostReason === 'crash' ? 'Crashed' : 'Flew off course'}
-    </div>
-    {#if $hud.closestApproach != null}
-      <div class="sub">{missText($hud.closestApproach)}</div>
-    {/if}
-    <div class="actions">
-      <button class="primary" onclick={() => game.resetShot()}>Retry</button>
-    </div>
-  </div>
-{/if}
+<!-- The win/lose summary now lives in EndOfLevel.svelte. -->
 
-<!-- Bottom hint + reset, thumb-reachable. -->
+<!-- Bottom bar: hint, preview-mode toggle, reset — all thumb-reachable. -->
 <div class="bottombar">
+  <button
+    class="ghost"
+    title="Trajectory preview length"
+    aria-label={`Preview: ${LABEL[$hud.previewMode]}`}
+    onclick={() => game.setPreviewMode(NEXT[$hud.previewMode])}
+  >
+    Preview: {LABEL[$hud.previewMode]}
+  </button>
   <span class="hint">
     {#if $hud.status === 'flying'}Flying…{:else}Pull back & release to launch{/if}
   </span>
@@ -88,42 +74,6 @@
     font-size: 13px;
   }
 
-  .banner {
-    position: fixed;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(19, 26, 58, 0.92);
-    border: 1px solid rgba(150, 170, 255, 0.18);
-    border-radius: 16px;
-    padding: 20px 24px;
-    text-align: center;
-    min-width: 220px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
-    pointer-events: auto;
-  }
-  .headline {
-    font-size: 20px;
-    font-weight: 700;
-  }
-  .win .headline {
-    color: var(--target, #37d6a6);
-  }
-  .lose .headline {
-    color: #ff9f6a;
-  }
-  .sub {
-    color: var(--ink-dim);
-    margin-top: 4px;
-    font-size: 14px;
-  }
-  .actions {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    margin-top: 16px;
-  }
-
   button {
     pointer-events: auto;
     font: inherit;
@@ -139,15 +89,11 @@
   button:active {
     transform: translateY(1px);
   }
-  button.primary {
-    background: var(--accent, #6ad2ff);
-    color: #04203a;
-    border-color: transparent;
-    font-weight: 600;
-  }
   button.ghost {
     background: transparent;
     color: var(--ink-dim);
     border-color: rgba(150, 170, 255, 0.2);
+    font-size: 13px;
+    padding: 7px 12px;
   }
 </style>

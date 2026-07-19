@@ -14,7 +14,8 @@
       "Bash(pkill:*)",
       "Bash(export:*)",
       "Bash(cd:*)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(grep -rn 'localStorage\\\\|sessionStorage\\\\|subscribe\\\\|$hud\\\\|import.*state' /workspace/src/ui /workspace/src)"
     ]
   }
 }

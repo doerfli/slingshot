@@ -21,6 +21,16 @@ export function check(p: Vec2, level: Level): Outcome {
     }
   }
 
+  // Inert hazards (asteroids/debris) — lethal on contact, no gravity. Fixed order.
+  if (level.hazards) {
+    for (let i = 0; i < level.hazards.length; i++) {
+      const h = level.hazards[i];
+      if (dist2(p, h.c) <= h.radius * h.radius) {
+        return 'crash';
+      }
+    }
+  }
+
   // Outside the play area (the loop adds the short grace window before failing).
   const { minX, minY, maxX, maxY } = level.bounds;
   if (p.x < minX || p.x > maxX || p.y < minY || p.y > maxY) {

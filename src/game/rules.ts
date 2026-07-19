@@ -17,6 +17,22 @@ export function closestApproach(trail: Vec2[], target: Target): number {
   return Math.max(0, min - target.radius);
 }
 
+/** The point on a flight path that came closest to the target center, so the near-miss
+ *  readout can be shown *spatially* (a marker on the canvas), not just as a number.
+ *  Returns null for an empty trail. */
+export function closestApproachPoint(trail: Vec2[], target: Target): Vec2 | null {
+  let best: Vec2 | null = null;
+  let min = Infinity;
+  for (const p of trail) {
+    const d = dist(p, target.c);
+    if (d < min) {
+      min = d;
+      best = p;
+    }
+  }
+  return best;
+}
+
 /** Phase 2 stub: 3 stars at/under par, then one fewer per extra attempt (min 1). */
 export function starsFor(attempts: number, par: number): number {
   if (attempts <= par) return 3;

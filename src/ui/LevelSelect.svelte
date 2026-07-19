@@ -13,16 +13,20 @@
     <div class="pills">
       {#each LEVELS as level, i (level.id)}
         {@const unlocked = isUnlocked(i, $hud.unlockedCount, $hud.devMode)}
+        {@const stars = $hud.levelStars[level.id] ?? 0}
         <button
           class="pill"
           class:current={i === $hud.levelIndex}
           class:locked={!unlocked}
           disabled={!unlocked}
           title={unlocked ? level.name : 'Locked'}
-          aria-label={`Level ${i + 1}: ${unlocked ? level.name : 'locked'}`}
+          aria-label={`Level ${i + 1}: ${unlocked ? level.name : 'locked'}${stars ? `, ${stars} stars` : ''}`}
           onclick={() => game.goToLevel(i)}
         >
-          {unlocked ? i + 1 : '🔒'}
+          <span class="num">{unlocked ? i + 1 : '🔒'}</span>
+          {#if unlocked && stars > 0}
+            <span class="stars" aria-hidden="true">{'★'.repeat(stars)}</span>
+          {/if}
         </button>
       {/each}
     </div>
@@ -73,8 +77,14 @@
   }
   .pill {
     pointer-events: auto;
-    width: 34px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    min-width: 34px;
     height: 34px;
+    padding: 0 6px;
     border-radius: 999px;
     border: 1px solid transparent;
     background: transparent;
@@ -85,6 +95,18 @@
     cursor: pointer;
     font-variant-numeric: tabular-nums;
     -webkit-tap-highlight-color: transparent;
+  }
+  .pill .num {
+    line-height: 1;
+  }
+  .pill .stars {
+    font-size: 8px;
+    line-height: 1;
+    letter-spacing: 1px;
+    color: #ffd166;
+  }
+  .pill.current .stars {
+    color: #04203a;
   }
   .pill.current {
     background: var(--accent, #6ad2ff);

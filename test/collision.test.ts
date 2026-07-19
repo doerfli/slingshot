@@ -56,4 +56,20 @@ describe('collision.check', () => {
     });
     expect(check(vec(40, 0), level)).toBe('win');
   });
+
+  it('crashes inside a hazard radius', () => {
+    const level = makeLevel({ hazards: [{ c: vec(-100, 100), radius: 20 }] });
+    expect(check(vec(-100, 100), level)).toBe('crash'); // dead center
+    expect(check(vec(-100, 120), level)).toBe('crash'); // exactly on the edge
+  });
+
+  it('keeps flying just outside a hazard', () => {
+    const level = makeLevel({ hazards: [{ c: vec(-100, 100), radius: 20 }] });
+    expect(check(vec(-100, 121), level)).toBe('flying'); // just past the edge
+  });
+
+  it('a hazard off the flight path never triggers', () => {
+    const level = makeLevel({ hazards: [{ c: vec(200, -200), radius: 20 }] });
+    expect(check(vec(-150, 100), level)).toBe('flying');
+  });
 });

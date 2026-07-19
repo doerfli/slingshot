@@ -21,7 +21,7 @@ export const LEVELS: Level[] = [
     bodies: [
       // Clear presence but set far off the pad→target line, so the direct shot up
       // barely bends. Teaches the gesture before gravity matters.
-      { c: vec(230, -150), strength: 1400000, radius: 22 },
+      { c: vec(230, -150), strength: 1120000, radius: 22 },
     ],
     target: { c: vec(70, -470), radius: 32 },
     bounds: FIELD,
@@ -36,7 +36,7 @@ export const LEVELS: Level[] = [
     name: 'The Bend',
     pad: vec(-160, 460),
     bodies: [
-      { c: vec(20, 30), strength: 4500000, radius: 26 },
+      { c: vec(20, 30), strength: 3600000, radius: 26 },
     ],
     target: { c: vec(190, -430), radius: 40 },
     bounds: FIELD,
@@ -51,11 +51,42 @@ export const LEVELS: Level[] = [
     name: 'Around the World',
     pad: vec(0, 465),
     bodies: [
-      { c: vec(0, 40), strength: 5500000, radius: 34 },
+      { c: vec(0, 40), strength: 4400000, radius: 34 },
     ],
     target: { c: vec(60, -440), radius: 38 },
     bounds: FIELD,
     previewLength: 170,
+    par: 4,
+  },
+
+  // 4 — The corridor: two gravity wells flanking the path with a gap to thread. Fire up
+  // the middle; drift too far either way and a well grabs you.
+  {
+    id: 4,
+    name: 'The Corridor',
+    pad: vec(0, 470),
+    bodies: [
+      { c: vec(-115, 0), strength: 4000000, radius: 30 },
+      { c: vec(115, 0), strength: 4000000, radius: 30 },
+    ],
+    target: { c: vec(0, -460), radius: 36 },
+    bounds: FIELD,
+    previewLength: 150,
+    par: 3,
+  },
+
+  // 5 — Slingshot around: launch from the side, swing tight past one well, and let the
+  // flyby whip the probe across to an off-angle target it couldn't reach straight.
+  {
+    id: 5,
+    name: 'Slingshot Around',
+    pad: vec(-190, 470),
+    bodies: [
+      { c: vec(-10, -20), strength: 4800000, radius: 28 },
+    ],
+    target: { c: vec(220, -410), radius: 40 },
+    bounds: FIELD,
+    previewLength: 150,
     par: 4,
   },
 ];

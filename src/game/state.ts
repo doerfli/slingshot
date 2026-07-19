@@ -25,6 +25,14 @@ export interface HudState {
   unlockedCount: number;
   /** Dev mode: unlocks every level at once for testing. */
   devMode: boolean;
+  /** Stars earned on the shot that just won (0 until a win this visit). */
+  stars: number;
+  /** Best star rating ever recorded for the current level (0 if never beaten). */
+  bestStars: number;
+  /** Fewest attempts on a past winning run of the current level (null if never). */
+  bestAttempts: number | null;
+  /** Best stars per level id, for the level-select display. */
+  levelStars: Record<number, number>;
 }
 
 export const initialHud: HudState = {
@@ -40,6 +48,10 @@ export const initialHud: HudState = {
   previewMode: 'partial',
   unlockedCount: 1,
   devMode: false,
+  stars: 0,
+  bestStars: 0,
+  bestAttempts: null,
+  levelStars: {},
 };
 
 /** Reactive store the Svelte HUD subscribes to. */

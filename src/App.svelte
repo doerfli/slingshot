@@ -4,6 +4,7 @@
   import { attachAim } from './input/aim';
   import Hud from './ui/Hud.svelte';
   import LevelSelect from './ui/LevelSelect.svelte';
+  import EndOfLevel from './ui/EndOfLevel.svelte';
 
   let canvas: HTMLCanvasElement;
   let game = $state<Game | undefined>(undefined);
@@ -28,4 +29,5 @@
 {#if game}
   <LevelSelect {game} />
   <Hud {game} />
+  <EndOfLevel {game} />
 {/if}

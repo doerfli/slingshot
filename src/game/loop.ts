@@ -13,7 +13,8 @@ import type { Level } from '../sim/types';
 import { clear, drawScene, type RenderState } from '../render/draw';
 import { fitToField, screenToWorld, type Camera } from '../render/camera';
 import { LEVELS, levelAt } from './levels';
-import { closestApproach } from './rules';
+import { closestApproach, closestApproachPoint, starsFor } from './rules';
+import { load, save, type SaveData } from '../persist/store';
 import { hud, type Status, type LostReason, type PreviewMode } from './state';
 
 export class Game {
@@ -29,6 +30,10 @@ export class Game {
   private previewMode: PreviewMode = 'partial';
   private unlockedCount = 1;
   private devMode = false;
+  /** Persisted unlock progress + per-level best result. */
+  private save: SaveData;
+  /** Stars earned on the shot that just won (0 until a win this visit). */
+  private stars = 0;
 
   private probe: ProbeState | null = null;
   private offscreenTime = 0;
@@ -47,6 +52,9 @@ export class Game {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d')!;
     this.level = levelAt(0);
+    // Restore unlock progress + best scores from the last visit.
+    this.save = load();
+    this.unlockedCount = Math.max(1, Math.min(this.save.unlockedCount, LEVELS.length));
     // Opt into dev mode via ?dev in the URL (unlocks everything from the start).
     if (typeof location !== 'undefined' && /(?:\?|&)dev\b/.test(location.search)) {
       this.devMode = true;
@@ -120,9 +128,18 @@ export class Game {
   private finish(status: 'won' | 'lost', reason: LostReason): void {
     this.status = status;
     this.lostReason = reason;
-    // Winning unlocks the next level in sequence.
     if (status === 'won') {
+      this.stars = starsFor(this.attempts, this.level.par);
+      // Winning unlocks the next level in sequence...
       this.unlockedCount = Math.max(this.unlockedCount, Math.min(this.levelIndex + 2, LEVELS.length));
+      // ...and records the best result for this level (most stars / fewest attempts).
+      const prev = this.save.levels[this.level.id];
+      this.save.levels[this.level.id] = {
+        stars: Math.max(prev?.stars ?? 0, this.stars),
+        bestAttempts: Math.min(prev?.bestAttempts ?? Infinity, this.attempts),
+      };
+      this.save.unlockedCount = this.unlockedCount;
+      save(this.save);
     }
     this.pushHud();
   }
@@ -158,6 +175,7 @@ export class Game {
     this.attempts += 1;
     this.status = 'flying';
     this.lostReason = null;
+    this.stars = 0;
     this.pushHud();
   }
 
@@ -174,6 +192,7 @@ export class Game {
     this.dragWorld = null;
     this.status = 'aiming';
     this.lostReason = null;
+    this.stars = 0;
     this.pushHud();
   }
 
@@ -233,11 +252,17 @@ export class Game {
       }
     }
 
+    const closestPoint =
+      this.status === 'lost' && this.probe
+        ? closestApproachPoint(this.probe.trail, this.level.target)
+        : null;
+
     const rs: RenderState = {
       level: this.level,
       probe: this.probe,
       preview,
       aimVelocity,
+      closestPoint,
     };
     drawScene(this.ctx, this.cssW, this.cssH, rs);
   }
@@ -249,6 +274,10 @@ export class Game {
       this.status === 'lost' && this.probe
         ? closestApproach(this.probe.trail, this.level.target)
         : null;
+
+    const record = this.save.levels[this.level.id];
+    const levelStars: Record<number, number> = {};
+    for (const id in this.save.levels) levelStars[id] = this.save.levels[id].stars;
 
     hud.set({
       levelId: this.level.id,
@@ -263,6 +292,10 @@ export class Game {
       previewMode: this.previewMode,
       unlockedCount: this.unlockedCount,
       devMode: this.devMode,
+      stars: this.stars,
+      bestStars: record?.stars ?? 0,
+      bestAttempts: record?.bestAttempts ?? null,
+      levelStars,
     });
   }
 }

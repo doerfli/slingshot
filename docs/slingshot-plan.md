@@ -29,10 +29,10 @@ predictor**.
 ## Status & Progress
 
 > **Update this section as work lands.** Legend: `[ ]` not started · `[~]` in progress · `[x]` done.
-> Current overall status: **Phase 1 code complete** — all automated gates green (build, typecheck,
-> 18 tests). Remaining: human visual/gesture playtest on a phone (the one thing tests can't cover).
+> Current overall status: **Phase 2 code complete** — all automated gates green (build, typecheck,
+> 23 tests). Remaining: human visual/gesture playtest on a phone (the one thing tests can't cover).
 
-**Last updated:** 2026-07-18
+**Last updated:** 2026-07-19
 
 ### Phase 1 — MVP
 - [x] Scaffold (Vite + Svelte-TS + Vitest; `dev`/`test`/`build` green; portrait `index.html`)
@@ -49,11 +49,17 @@ predictor**.
 - [ ] **Milestone (needs human):** confirm curving around the body *feels* good on a phone viewport
 
 ### Phase 2 — Breadth, HUD, scoring
-- [ ] Multi-body levels (corridor, slingshot) + hazards (`collision` hazard test)
-- [ ] Svelte HUD shell via `game/state.ts` (counters, preview indicator, reset, EndOfLevel)
-- [ ] Target-vs-hazard by shape/icon (colorblind-safe)
-- [ ] Scoring + par + 1–3 stars + `localStorage` persistence + sequential unlock
-- [ ] Flight-trail feedback + near-miss/closest-approach readout
+- [x] Multi-body levels (Corridor L4, Slingshot L5) + hazard mechanic: distinct inert
+      `Hazard` type (`sim/types`), `collision` hazard test (TDD), asteroid shape in `draw`.
+      (Hazard-*using* levels land in Phase 3 per the asteroid-field ordering; the mechanic is ready.)
+- [x] Svelte HUD shell via `game/state.ts` (attempts/par, preview-mode toggle, reset,
+      new `ui/EndOfLevel.svelte` with stars)
+- [x] Target-vs-hazard by shape (rings vs jagged asteroid polygon) — colorblind-safe
+- [x] Scoring + par + 1–3 stars + `localStorage` (`slingshot:v1`) persistence + sequential unlock
+      (`persist/store.ts`, `starsFor` wired in `game/loop`)
+- [x] Flight-trail feedback + near-miss/closest-approach readout (HUD text + on-canvas marker)
+- [ ] **Milestone (needs human):** phone-viewport playtest of L4/L5 feel, hazard-shape
+      legibility (grayscale), stars, and reload-persistence
 
 ### Phase 3 — Moving elements, polish, accessibility
 - [ ] Moving bodies + moving targets (`bodies.ts`) → true gravity-assist level + `test/assist.test.ts`
@@ -97,6 +103,25 @@ predictor**.
   strength spread: L1 900k→1.4M (straight-shot win still ~11°, but a close graze now bends 58°),
   L2 8M→4.5M, L3 9.5M→5.5M (winning-shot bend 53°/61°, close wrap 102°/107° — loosened from
   123–130°). All solvable (158/135/127 wins); 18 tests green.
+- 2026-07-19 — Phase 2 implemented end-to-end. (A) Hazard mechanic: distinct inert `Hazard`
+  type (no gravity, so determinism/gravity-sum untouched), fixed-order hazard test in
+  `sim/collision` (TDD, 3 new tests), jagged asteroid polygon in `render/draw` (shape-distinct
+  from smooth bodies + ringed target → colorblind-safe). (B) Levels 4 "The Corridor" (two wells,
+  thread the gap) + 5 "Slingshot Around" (tight flyby to off-angle target); `solvable.test` now
+  green for all 5. (C) Scoring + persistence: new `persist/store.ts` (`slingshot:v1`, defensive
+  load/save), `starsFor` wired in `game/loop.finish`, best stars/attempts + unlock persisted and
+  restored on load; `HudState` gains `stars`/`bestStars`/`bestAttempts`/`levelStars`. (D) HUD:
+  new `ui/EndOfLevel.svelte` (stars as filled/outline shapes, best line, retry/next — moved out
+  of `Hud`), preview-mode toggle in `Hud`, earned-stars under `LevelSelect` pills, on-canvas
+  near-miss marker. Gates green: 23 Vitest tests, `svelte-check` 0/0, `bun run build`, dev-server
+  smoke test. Pending: human phone playtest. Hazard-*using* levels deferred to Phase 3.
+- 2026-07-19 — Deflection tuning: reduced every gravity-body `strength` by 20% (L1 1.4M→1.12M,
+  L2 4.5M→3.6M, L3 5.5M→4.4M, L4 5.0M→4.0M ×2, L5 6.0M→4.8M) for a gentler bend. All 5 levels
+  still solvable; 23 tests green.
+- 2026-07-19 — Raised `MAX_SPEED` 230→306 (+33%) for snappier launches. All 5 levels still
+  solvable; 23 tests green.
+- 2026-07-19 — Raised `MAX_SPEED` again 306→407 (+33%) for even snappier shots. All 5 levels
+  still solvable; 23 tests green.
 
 ---
 

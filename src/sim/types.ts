@@ -22,6 +22,16 @@ export interface Target {
   radius: number;
 }
 
+/**
+ * An inert hazard (asteroid / debris). Unlike a gravity {@link Body} it exerts no
+ * pull — it only kills on contact. Kept a distinct type so hazards never enter the
+ * gravity sum (which would perturb determinism) and can be drawn as a distinct shape.
+ */
+export interface Hazard {
+  c: Vec2;
+  radius: number;
+}
+
 /** World-space play area. Leaving it (plus a short grace) fails the shot. */
 export interface Bounds {
   minX: number;
@@ -36,6 +46,8 @@ export interface Level {
   /** Fixed launch-pad position. */
   pad: Vec2;
   bodies: Body[];
+  /** Inert lethal obstacles (asteroids/debris). Exert no gravity. */
+  hazards?: Hazard[];
   target: Target;
   bounds: Bounds;
   /** How many predicted points the partial preview draws (difficulty lever). */
