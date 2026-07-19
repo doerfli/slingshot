@@ -4,6 +4,7 @@
 // imports Svelte, and per-frame rendering never routes through Svelte reactivity.
 
 import type { Vec2 } from '../sim/vec';
+import { dist } from '../sim/vec';
 import { launch, advance, nudge, type ProbeState } from '../sim/probe';
 import { check } from '../sim/collision';
 import { predict } from '../sim/predict';
@@ -51,6 +52,9 @@ export class Game {
 
   private probe: ProbeState | null = null;
   private offscreenTime = 0;
+  /** Distance from pad to target at the moment of launch — the reference the music uses to
+   *  turn the probe's live distance-to-target into a 0→1 "proximity" (excitement) signal. */
+  private launchDist = 1;
   /** Mid-course nudges left on the live shot (starts at level.nudges each launch). */
   private nudgesRemaining = 0;
   /** Closest the live shot has come to any body surface (world units) — the style score
@@ -253,6 +257,9 @@ export class Game {
     this.probe = launch(this.level.pad, v0);
     // The world clock keeps flowing from exactly where aiming left it — no discontinuity,
     // so the shot flies the path the live preview was drawing.
+    // Record the launch-time pad→target distance so the music can gauge how close the
+    // probe is getting (proximity → excitement).
+    this.launchDist = Math.max(1, dist(this.level.pad, targetAt(this.level.target, this.simT).c));
     this.offscreenTime = 0;
     this.nudgesRemaining = this.level.nudges ?? 0;
     this.minGap = Infinity;
@@ -364,6 +371,13 @@ export class Game {
     const bodies = bodiesAt(this.level.bodies, this.simT);
     const target = targetAt(this.level.target, this.simT);
     const hazards = hazardsAt(this.level.hazards, this.simT);
+
+    // Drive the dynamic music: excitement rises as the probe nears the target.
+    // Presentation only — reads sim state, never writes it.
+    if (this.status === 'flying' && this.probe) {
+      const gap = Math.max(0, dist(this.probe.p, target.c) - target.radius);
+      sfx.flightUpdate(1 - gap / this.launchDist);
+    }
 
     let preview: Vec2[] = [];
     let aimVelocity: Vec2 | null = null;

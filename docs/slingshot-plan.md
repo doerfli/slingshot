@@ -159,6 +159,14 @@ predictor**.
   `Dockerfile` (Bun→nginx) + `docker/nginx.conf` + `.dockerignore`; `docker build` verified
   (container run left to the user — devcontainer can't reach it). Gates: `svelte-check` 0/0,
   50 Vitest tests, `bun run build`, `docker build`. Pending: human phone playtest.
+- 2026-07-19 — Audio polish: made the in-flight synthwave loop **excitement-dynamic**. New
+  `sfx.flightUpdate(proximity)` (called each frame by `game/loop.render` during flight) drives
+  one eased param in the scheduler: **excitement** rises as the probe nears the target —
+  lifting the music submix, opening the bass filter, snapping the hats, and fading in a doubled
+  octave arp for a build toward the goal. Loop records `launchDist` (pad→target at launch) as
+  the proximity reference. Tempo stays fixed at ~122 BPM (a speed-scaling experiment was tried
+  and reverted as too frantic). Presentation only (reads sim, never writes). Gates:
+  `svelte-check` 0/0, 50 tests still green.
 
 ---
 

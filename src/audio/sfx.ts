@@ -101,13 +101,19 @@ export function nudge(): void {
   tone(880, 880, 0.06, 0.3, 'square');
 }
 
-// --- in-flight background music: an 80s synthwave dance loop -----------------------
+// --- in-flight background music: a DYNAMIC 80s synthwave dance loop -----------------
 // A four-on-the-floor kick, offbeat hi-hats and a backbeat clap under a driving octave
 // synth-bass and a bright square arp, cycling an A-minor i–VI–III–VII progression at a
-// danceable ~122 BPM. Scheduled ahead of the audio clock (the standard two-clocks
+// fixed danceable ~122 BPM. Scheduled ahead of the audio clock (the standard two-clocks
 // pattern) so the groove stays tight without setInterval jitter.
+//
+// The mix reacts to the live flight (fed by `flightUpdate` from the game loop):
+//   • EXCITEMENT rises as the probe nears the TARGET — the mix opens up (louder, brighter
+//     bass, a doubled octave arp, snappier hats) for a build toward the goal.
+// It eases toward its target each 16th so the change glides instead of jumping. (Tempo
+// stays constant — an earlier speed-scaling experiment was reverted as too frantic.)
 
-const STEP16 = 0.123; // seconds per 16th note (~122 BPM)
+const STEP16 = 0.123; // seconds per 16th note (~122 BPM), fixed
 const BARS: { arp: number[]; bass: number }[] = [
   { arp: [220.0, 261.63, 329.63, 440.0], bass: 110.0 }, // Am
   { arp: [174.61, 220.0, 261.63, 349.23], bass: 87.31 }, // F
@@ -120,7 +126,24 @@ let musicPlaying = false;
 let nextNoteTime = 0;
 let stepIndex = 0;
 
-/** A punchy synth kick: a fast pitch drop with a quick amplitude decay. */
+// Live intensity: `exciteTarget` is set by flightUpdate; `excite` eases toward it so the
+// mix glides. 0 (far from target) → 1 (at the target).
+let exciteTarget = 0;
+let excite = 0;
+
+const clamp01 = (x: number): number => (x < 0 ? 0 : x > 1 ? 1 : x);
+
+/**
+ * Feed the music the live flight state so it can react (presentation only — never touches
+ * the sim). Call each frame while a shot is in flight.
+ * @param proximity 0 (just launched / far) → 1 (at the target). Drives excitement.
+ */
+export function flightUpdate(proximity: number): void {
+  exciteTarget = clamp01(proximity);
+}
+
+/** A punchy synth kick: a fast pitch drop with a quick amplitude decay. Hits a touch
+ *  harder as excitement climbs. */
 function kick(time: number): void {
   if (!ctx || !musicBus) return;
   const o = ctx.createOscillator();
@@ -128,7 +151,7 @@ function kick(time: number): void {
   o.type = 'sine';
   o.frequency.setValueAtTime(165, time);
   o.frequency.exponentialRampToValueAtTime(50, time + 0.11);
-  g.gain.setValueAtTime(0.9, time);
+  g.gain.setValueAtTime(0.85 + 0.2 * excite, time);
   g.gain.exponentialRampToValueAtTime(0.0001, time + 0.18);
   o.connect(g);
   g.connect(musicBus);
@@ -155,7 +178,8 @@ function noiseBurst(time: number, dur: number, peak: number, kind: 'hp' | 'bp', 
   src.stop(time + dur + 0.02);
 }
 
-/** A warm sawtooth synth-bass note through a lowpass. */
+/** A warm sawtooth synth-bass note through a lowpass. Excitement opens the filter
+ *  (brighter) and drives it a little harder. */
 function bass(freq: number, time: number): void {
   if (!ctx || !musicBus) return;
   const o = ctx.createOscillator();
@@ -164,10 +188,10 @@ function bass(freq: number, time: number): void {
   o.type = 'sawtooth';
   o.frequency.setValueAtTime(freq, time);
   f.type = 'lowpass';
-  f.frequency.value = 900;
+  f.frequency.value = 700 + 1300 * excite; // duller at rest, singing near the target
   const dur = STEP16 * 1.7;
   g.gain.setValueAtTime(0.0001, time);
-  g.gain.exponentialRampToValueAtTime(0.09, time + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.08 + 0.05 * excite, time + 0.01);
   g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
   o.connect(f);
   f.connect(g);
@@ -176,8 +200,8 @@ function bass(freq: number, time: number): void {
   o.stop(time + dur + 0.02);
 }
 
-/** A bright square-wave arp pluck. */
-function lead(freq: number, time: number): void {
+/** A bright square-wave arp pluck. `gainScale` lets the doubled octave layer sit quieter. */
+function lead(freq: number, time: number, gainScale = 1): void {
   if (!ctx || !musicBus) return;
   const o = ctx.createOscillator();
   const g = ctx.createGain();
@@ -185,7 +209,7 @@ function lead(freq: number, time: number): void {
   o.frequency.setValueAtTime(freq, time);
   const dur = STEP16 * 0.9;
   g.gain.setValueAtTime(0.0001, time);
-  g.gain.exponentialRampToValueAtTime(0.05, time + 0.008);
+  g.gain.exponentialRampToValueAtTime((0.045 + 0.03 * excite) * gainScale, time + 0.008);
   g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
   o.connect(g);
   g.connect(musicBus);
@@ -193,15 +217,19 @@ function lead(freq: number, time: number): void {
   o.stop(time + dur + 0.02);
 }
 
-/** Lay down one 16th-note slice of the groove (drums + bass + arp). */
+/** Lay down one 16th-note slice of the groove (drums + bass + arp). Voicing thickens with
+ *  `excite`: hats get louder/brighter and a doubled octave arp fades in near the target. */
 function scheduleStep(step: number, time: number): void {
   const bar = BARS[Math.floor(step / 16) % BARS.length];
   const s = step % 16; // position within the bar, in 16ths
 
   // Drums: four-on-the-floor kick, backbeat clap on beats 2 & 4, offbeat hats.
   if (s % 4 === 0) kick(time);
-  if (s === 4 || s === 12) noiseBurst(time, 0.09, 0.16, 'bp', 1600); // clap
-  if (s % 2 === 1) noiseBurst(time, s % 4 === 3 ? 0.12 : 0.035, s % 4 === 3 ? 0.06 : 0.05, 'hp', s % 4 === 3 ? 6000 : 8000);
+  if (s === 4 || s === 12) noiseBurst(time, 0.09, 0.14 + 0.06 * excite, 'bp', 1600); // clap
+  if (s % 2 === 1) {
+    const open = s % 4 === 3; // longer "open" hat on the last 16th of each beat
+    noiseBurst(time, open ? 0.12 : 0.035, (open ? 0.06 : 0.05) + 0.05 * excite, 'hp', open ? 6000 : 8000);
+  }
 
   // Octave synth-bass on the eighths (root, jumping up an octave on the "and").
   if (s % 2 === 0) bass(s % 4 === 2 ? bar.bass * 2 : bar.bass, time);
@@ -209,12 +237,21 @@ function scheduleStep(step: number, time: number): void {
   // Bright arp running the chord tones in 16ths, alternating octave each beat for lift.
   const oct = Math.floor(s / 4) % 2 === 1 ? 2 : 1;
   lead(bar.arp[s % 4] * oct, time);
+  // Excitement layer: double the arp an octave up (quietly), so the top end shimmers more
+  // as the probe closes in. Silent when far (excite ≈ 0 → gainScale ≈ 0).
+  if (excite > 0.05) lead(bar.arp[s % 4] * oct * 2, time, excite * 0.7);
 }
 
-/** Lookahead scheduler: enqueue any notes due within the next ~200 ms, then re-arm. */
+/** Lookahead scheduler: enqueue any notes due within the next ~200 ms, then re-arm. Eases
+ *  the live excitement toward its target each 16th so the mix glides. */
 function scheduler(): void {
   if (!musicPlaying || !ctx) return;
   while (nextNoteTime < ctx.currentTime + 0.2) {
+    // Ease toward the live target (~0.12/step ≈ smooth over a beat or two).
+    excite += (exciteTarget - excite) * 0.12;
+    // Lift the whole music submix as excitement builds (0.5 → ~0.82).
+    if (musicBus) musicBus.gain.setTargetAtTime(0.5 + 0.32 * excite, nextNoteTime, 0.05);
+
     scheduleStep(stepIndex, nextNoteTime);
     nextNoteTime += STEP16;
     stepIndex++;
@@ -228,6 +265,9 @@ export function flightStart(): void {
   if (!c || muted || musicPlaying) return;
   musicPlaying = true;
   stepIndex = 0;
+  // Every flight starts calm; the loop builds excitement up via flightUpdate.
+  excite = exciteTarget = 0;
+  if (musicBus) musicBus.gain.value = 0.5;
   nextNoteTime = c.currentTime + 0.06;
   scheduler();
 }
