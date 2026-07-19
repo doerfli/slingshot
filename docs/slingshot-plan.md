@@ -29,10 +29,9 @@ predictor**.
 ## Status & Progress
 
 > **Update this section as work lands.** Legend: `[ ]` not started · `[~]` in progress · `[x]` done.
-> Current overall status: **Phase 3 code complete** — all automated gates green (typecheck 0
-> errors, 50 tests, production build, `docker build`). Remaining: human visual/gesture/audio
-> playtest on a phone, and running the built container (deferred to the user — a devcontainer
-> can't reach the served image).
+> Current overall status: **Phase 3 signed off** — all automated gates green (typecheck 0
+> errors, 50 tests, production build, `docker build`) and the human phone playtest + container
+> run are confirmed working (2026-07-19). All three phases complete.
 
 **Last updated:** 2026-07-19
 
@@ -80,9 +79,10 @@ predictor**.
       hazard(jagged) stay shape-distinct for moving entities (colorblind-safe).
 - [x] Deployment — multi-stage `Dockerfile` (Bun build → nginx) + `docker/nginx.conf` (hashed assets
       immutable, `index.html` no-cache, SPA fallback) + `.dockerignore`. `docker build` verified.
-- [ ] **Milestone (needs human):** phone-viewport playtest of L6–L8 (timing a moving target, a real
-      assist, the asteroid-field nudge), audio, reduced-motion, star/graze persistence; and run the
-      built container (`docker run -p 8080:80 slingshot:phase3`) to confirm nginx serving + SPA fallback.
+- [x] **Milestone (human-confirmed):** phone-viewport playtest of L6–L8 (timing a moving target, a real
+      assist, the asteroid-field nudge), audio (incl. the excitement-dynamic music), reduced-motion,
+      star/graze persistence, and the built container (nginx serving + SPA fallback) — confirmed
+      working 2026-07-19.
 
 ### Change log
 - 2026-07-18 — Plan authored; toolchain (bun 1.3.14 + node 24 via mise) confirmed working.
@@ -167,6 +167,10 @@ predictor**.
   the proximity reference. Tempo stays fixed at ~122 BPM (a speed-scaling experiment was tried
   and reverted as too frantic). Presentation only (reads sim, never writes). Gates:
   `svelte-check` 0/0, 50 tests still green.
+- 2026-07-19 — **Phase 3 signed off.** Human phone playtest confirmed L6–L8 (timing a moving
+  target, a real assist, the asteroid-field nudge), audio incl. the excitement-dynamic music,
+  reduced-motion, star/graze persistence, and the built container (nginx serving + SPA fallback)
+  all working. All three phases complete.
 
 ---
 
