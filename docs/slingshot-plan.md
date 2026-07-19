@@ -29,8 +29,8 @@ predictor**.
 ## Status & Progress
 
 > **Update this section as work lands.** Legend: `[ ]` not started · `[~]` in progress · `[x]` done.
-> Current overall status: **Phase 2 code complete** — all automated gates green (build, typecheck,
-> 23 tests). Remaining: human visual/gesture playtest on a phone (the one thing tests can't cover).
+> Current overall status: **Phase 2 complete** — all automated gates green (build, typecheck,
+> 23 tests) and the human playtest is confirmed. Ready to begin Phase 3.
 
 **Last updated:** 2026-07-19
 
@@ -58,8 +58,8 @@ predictor**.
 - [x] Scoring + par + 1–3 stars + `localStorage` (`slingshot:v1`) persistence + sequential unlock
       (`persist/store.ts`, `starsFor` wired in `game/loop`)
 - [x] Flight-trail feedback + near-miss/closest-approach readout (HUD text + on-canvas marker)
-- [ ] **Milestone (needs human):** phone-viewport playtest of L4/L5 feel, hazard-shape
-      legibility (grayscale), stars, and reload-persistence
+- [x] **Milestone (human-confirmed):** phone-viewport playtest of L4/L5 feel, hazard-shape
+      legibility (grayscale), stars, and reload-persistence — confirmed good 2026-07-19
 
 ### Phase 3 — Moving elements, polish, accessibility
 - [ ] Moving bodies + moving targets (`bodies.ts`) → true gravity-assist level + `test/assist.test.ts`
@@ -122,6 +122,8 @@ predictor**.
   solvable; 23 tests green.
 - 2026-07-19 — Raised `MAX_SPEED` again 306→407 (+33%) for even snappier shots. All 5 levels
   still solvable; 23 tests green.
+- 2026-07-19 — Phase 2 signed off: human playtest confirmed the tuned feel, hazard-shape
+  legibility, stars, and reload-persistence all read well. Phase 2 complete; Phase 3 next.
 
 ---
 
