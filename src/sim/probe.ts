@@ -3,6 +3,7 @@
 // pure Kinematic the integrator advances.
 
 import type { Vec2 } from './vec';
+import { normalize, sub } from './vec';
 import type { Body, Outcome } from './types';
 import type { Kinematic } from './integrator';
 import { step } from './integrator';
@@ -39,5 +40,18 @@ export function advance(probe: ProbeState, bodies: Body[], dt: number): ProbeSta
   probe.v = next.v;
   probe.t += dt;
   probe.trail.push({ ...next.p });
+  return probe;
+}
+
+/**
+ * Apply the optional mid-course nudge (spec §4): a single fixed-magnitude impulse of
+ * strength `dv`, aimed from the probe's current position toward the tapped point
+ * `toward`. Mutates `probe.v`. A tap exactly on the probe (zero direction) is a no-op,
+ * so the impulse is never NaN. The nudge is player input — deliberately NOT part of the
+ * preview (sim/predict ignores it), the one place preview and reality may differ.
+ */
+export function nudge(probe: ProbeState, toward: Vec2, dv: number): ProbeState {
+  const dir = normalize(sub(toward, probe.p));
+  probe.v = { x: probe.v.x + dir.x * dv, y: probe.v.y + dir.y * dv };
   return probe;
 }

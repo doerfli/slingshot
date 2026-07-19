@@ -1,0 +1,15 @@
+# Keep the build context small and the image clean. dist/ is rebuilt inside the image,
+# node_modules is reinstalled from the lockfile, and none of the dev-only files are
+# needed at build time.
+node_modules
+dist
+.git
+.gitignore
+*.log
+scratch
+scratch/
+docs
+.vscode
+.devcontainer
+Dockerfile
+.dockerignore

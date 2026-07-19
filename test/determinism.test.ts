@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { step, type Kinematic } from '../src/sim/integrator';
 import { dragToLaunchVelocity } from '../src/sim/input-map';
 import { launch, advance } from '../src/sim/probe';
+import { bodiesAt } from '../src/sim/bodies';
 import type { Body } from '../src/sim/types';
 import { DT } from '../src/sim/constants';
 import { vec, type Vec2 } from '../src/sim/vec';
@@ -51,6 +52,33 @@ describe('determinism — a solved shot stays solved', () => {
       expect(a[i].x).toBe(b[i].x);
       expect(a[i].y).toBe(b[i].y);
     }
+  });
+});
+
+describe('determinism — moving bodies', () => {
+  const MOVING: Body[] = [
+    { c: vec(0, 0), strength: 90000, radius: 30, motion: { kind: 'orbit', center: vec(0, 0), radius: 80, omega: 1.1 } },
+  ];
+  const v0 = dragToLaunchVelocity(vec(-40, 90));
+
+  function flyMoving(launchT: number, steps: number): Vec2[] {
+    let s: Kinematic = { p: vec(-200, -40), v: v0 };
+    const path: Vec2[] = [s.p];
+    for (let i = 0; i < steps; i++) {
+      s = step(s, bodiesAt(MOVING, launchT + i * DT), DT);
+      path.push(s.p);
+    }
+    return path;
+  }
+
+  it('the same launch time yields a bit-for-bit identical path', () => {
+    expect(flyMoving(5 * DT, 400)).toEqual(flyMoving(5 * DT, 400));
+  });
+
+  it('a different launch time yields a different path (timing matters)', () => {
+    const a = flyMoving(0, 400);
+    const b = flyMoving(30 * DT, 400);
+    expect(b).not.toEqual(a);
   });
 });
 

@@ -12,6 +12,17 @@ export interface LevelRecord {
   stars: number;
   /** Fewest attempts taken on a winning run. */
   bestAttempts: number;
+  /** Tightest body-surface graze on a winning run (world units) — the style best.
+   *  Optional so saves from before style scoring load cleanly. */
+  bestGap?: number;
+}
+
+/** Player-level preferences (persisted across sessions). All optional so older saves
+ *  and partial data load cleanly. */
+export interface Settings {
+  muted?: boolean;
+  reducedMotion?: boolean;
+  previewMode?: 'partial' | 'full' | 'none';
 }
 
 export interface SaveData {
@@ -20,10 +31,12 @@ export interface SaveData {
   unlockedCount: number;
   /** Keyed by level id. */
   levels: Record<number, LevelRecord>;
+  /** Player preferences (audio, accessibility). */
+  settings: Settings;
 }
 
 function fresh(): SaveData {
-  return { version: VERSION, unlockedCount: 1, levels: {} };
+  return { version: VERSION, unlockedCount: 1, levels: {}, settings: {} };
 }
 
 /** localStorage may be absent (tests/SSR) or blocked (private mode). Never throw. */
@@ -48,6 +61,7 @@ export function load(): SaveData {
       version: VERSION,
       unlockedCount: typeof data.unlockedCount === 'number' ? data.unlockedCount : 1,
       levels: data.levels && typeof data.levels === 'object' ? data.levels : {},
+      settings: data.settings && typeof data.settings === 'object' ? data.settings : {},
     };
   } catch {
     return fresh();

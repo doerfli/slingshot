@@ -3,7 +3,7 @@
 
 import type { Vec2 } from '../sim/vec';
 import { dist } from '../sim/vec';
-import type { Target } from '../sim/types';
+import type { Body, Target } from '../sim/types';
 
 /** Closest a flight path came to the target center (world units). Used for the
  *  near-miss feedback the spec asks for on a failed shot (§7). */
@@ -39,3 +39,20 @@ export function starsFor(attempts: number, par: number): number {
   if (attempts <= par + 1) return 2;
   return 1;
 }
+
+/** Clearance from a point to the NEAREST gravity-body surface (dist-to-center − radius);
+ *  negative inside a body, +Infinity when there are no bodies. The game loop tracks the
+ *  minimum of this over a winning flight as the level's "style" score (spec §10): a
+ *  daring graze clears the surface by less, so a smaller gap is the more elegant line. */
+export function surfaceGap(p: Vec2, bodies: Body[]): number {
+  let min = Infinity;
+  for (const b of bodies) {
+    const gap = dist(p, b.c) - b.radius;
+    if (gap < min) min = gap;
+  }
+  return min;
+}
+
+/** World-units clearance at or under which a winning flyby counts as a daring graze —
+ *  earns the "Clean flyby" style badge. Tunable. */
+export const GRAZE_THRESHOLD = 26;

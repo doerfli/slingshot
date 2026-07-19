@@ -29,8 +29,10 @@ predictor**.
 ## Status & Progress
 
 > **Update this section as work lands.** Legend: `[ ]` not started · `[~]` in progress · `[x]` done.
-> Current overall status: **Phase 2 complete** — all automated gates green (build, typecheck,
-> 23 tests) and the human playtest is confirmed. Ready to begin Phase 3.
+> Current overall status: **Phase 3 code complete** — all automated gates green (typecheck 0
+> errors, 50 tests, production build, `docker build`). Remaining: human visual/gesture/audio
+> playtest on a phone, and running the built container (deferred to the user — a devcontainer
+> can't reach the served image).
 
 **Last updated:** 2026-07-19
 
@@ -62,12 +64,25 @@ predictor**.
       legibility (grayscale), stars, and reload-persistence — confirmed good 2026-07-19
 
 ### Phase 3 — Moving elements, polish, accessibility
-- [ ] Moving bodies + moving targets (`bodies.ts`) → true gravity-assist level + `test/assist.test.ts`
-- [ ] Optional mid-course nudge (per-level opt-in, off by default)
-- [ ] Full level set + style/proximity scoring
-- [ ] Audio (`audio/sfx.ts`) gated behind first gesture
-- [ ] Accessibility (full-preview toggle, reduced motion, safe-area insets, palette)
-- [ ] Deployment (multi-stage Dockerfile + nginx.conf)
+- [x] Moving bodies + moving targets (`sim/bodies.ts`, `Motion` on `sim/types`) threaded through
+      `collision.check(…, t)`, `predict(…, launchT)`, and a shared `simT` world clock in `game/loop`
+      (one `step()`, positioned bodies per tick — preview still matches reality). `test/assist.ts`
+      (moving ⇒ speed gain, fixed ⇒ bend only) + moving-body determinism + moving preview tests.
+- [x] Optional mid-course nudge — `probe.nudge` (impulse toward tap point), per-level `nudges`
+      opt-in (L8), HUD counter, `test/nudge.ts`. Ignored by the predictor by design.
+- [x] Full level set — L6 Moving Target, L7 True Assist, L8 Asteroid Field; `solvable.test` now
+      sweeps `launchT` for moving levels (all 8 winnable). Style/proximity scoring: `rules.surfaceGap`
+      + closest-graze tracked over a winning flight → "Clean flyby" badge + persisted best graze.
+- [x] Audio (`audio/sfx.ts`) — Web Audio synth (launch/whoosh/win/crash/nudge), unlocked on first
+      gesture, mute toggle persisted. No-ops without an AudioContext (tests/SSR).
+- [x] Accessibility — reduced-motion toggle (OS default via `matchMedia`) drops probe glow/streak;
+      full-preview toggle persisted; safe-area insets on HUD/selector; target(ring)/body(disc)/
+      hazard(jagged) stay shape-distinct for moving entities (colorblind-safe).
+- [x] Deployment — multi-stage `Dockerfile` (Bun build → nginx) + `docker/nginx.conf` (hashed assets
+      immutable, `index.html` no-cache, SPA fallback) + `.dockerignore`. `docker build` verified.
+- [ ] **Milestone (needs human):** phone-viewport playtest of L6–L8 (timing a moving target, a real
+      assist, the asteroid-field nudge), audio, reduced-motion, star/graze persistence; and run the
+      built container (`docker run -p 8080:80 slingshot:phase3`) to confirm nginx serving + SPA fallback.
 
 ### Change log
 - 2026-07-18 — Plan authored; toolchain (bun 1.3.14 + node 24 via mise) confirmed working.
@@ -124,6 +139,26 @@ predictor**.
   still solvable; 23 tests green.
 - 2026-07-19 — Phase 2 signed off: human playtest confirmed the tuned feel, hazard-shape
   legibility, stars, and reload-persistence all read well. Phase 2 complete; Phase 3 next.
+- 2026-07-19 — Phase 3 implemented end-to-end (all six workstreams). (1) **Moving elements**:
+  new `sim/bodies.ts` (`positionAt`/`bodiesAt`/`targetAt`/`hazardsAt`) — motion is a pure
+  function of sim time; `Motion` (`linear`|`orbit`) added to `sim/types`. Threaded a single
+  world clock `simT` through `game/loop` (advances every tick while aiming+flying, frozen on
+  result, reset on retry), `collision.check(p, level, t)`, and `predict(…, launchT)` using ONE
+  `step()` with bodies positioned per tick — preview still matches reality bit-for-bit. Render
+  now draws a positioned snapshot. Tests: `assist` (moving ⇒ +17.9 speed vs fixed, fixed ⇒ bend
+  only), moving-body determinism, moving preview-matches-reality, time-aware collision. (2)
+  **Nudge**: `probe.nudge` (impulse toward tap, `NUDGE_DV`), per-level `nudges` opt-in, routed
+  from `beginAim` while flying, HUD counter, `test/nudge`. (3) **Levels 6–8** (Moving Target,
+  True Assist, Asteroid Field w/ 1 nudge); `solvable.test` sweeps `launchT` for moving levels —
+  all 8 winnable. **Style scoring**: `rules.surfaceGap` + closest-graze over a winning flight →
+  "Clean flyby" badge (`GRAZE_THRESHOLD`) + persisted `bestGap`. (4) **Audio** `audio/sfx.ts`
+  (Web Audio synth, gesture-unlocked, mute persisted, no-ops without AudioContext). (5)
+  **Accessibility**: reduced-motion toggle (OS default via `matchMedia`) strips probe glow/streak;
+  preview-mode persisted; safe-area insets confirmed; shapes stay colorblind-safe for moving
+  entities. Settings persisted via new `SaveData.settings`. (6) **Deployment**: multi-stage
+  `Dockerfile` (Bun→nginx) + `docker/nginx.conf` + `.dockerignore`; `docker build` verified
+  (container run left to the user — devcontainer can't reach it). Gates: `svelte-check` 0/0,
+  50 Vitest tests, `bun run build`, `docker build`. Pending: human phone playtest.
 
 ---
 

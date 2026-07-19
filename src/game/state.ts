@@ -33,6 +33,21 @@ export interface HudState {
   bestAttempts: number | null;
   /** Best stars per level id, for the level-select display. */
   levelStars: Record<number, number>;
+  /** Mid-course nudges this level grants (0 = the mechanic is off for this level). */
+  maxNudges: number;
+  /** Nudges left on the live shot (only meaningful while flying). */
+  nudgesRemaining: number;
+  /** Closest the winning shot grazed a body surface (world units); null if no win/no
+   *  bodies. Smaller = a more daring line. */
+  styleGap: number | null;
+  /** Tightest graze ever recorded on this level (null if never / no bodies). */
+  bestGap: number | null;
+  /** Whether the winning shot earned the "Clean flyby" style badge (a tight graze). */
+  graze: boolean;
+  /** Audio muted. */
+  muted: boolean;
+  /** Reduced-motion accessibility option active. */
+  reducedMotion: boolean;
 }
 
 export const initialHud: HudState = {
@@ -52,6 +67,13 @@ export const initialHud: HudState = {
   bestStars: 0,
   bestAttempts: null,
   levelStars: {},
+  maxNudges: 0,
+  nudgesRemaining: 0,
+  styleGap: null,
+  bestGap: null,
+  graze: false,
+  muted: false,
+  reducedMotion: false,
 };
 
 /** Reactive store the Svelte HUD subscribes to. */

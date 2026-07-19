@@ -20,18 +20,42 @@
 
 <!-- The win/lose summary now lives in EndOfLevel.svelte. -->
 
-<!-- Bottom bar: hint, preview-mode toggle, reset — all thumb-reachable. -->
+<!-- Bottom bar: settings cluster (preview length, sound, reduced-motion), hint, reset —
+     all thumb-reachable, and clear of the centered level selector at the top. -->
 <div class="bottombar">
-  <button
-    class="ghost"
-    title="Trajectory preview length"
-    aria-label={`Preview: ${LABEL[$hud.previewMode]}`}
-    onclick={() => game.setPreviewMode(NEXT[$hud.previewMode])}
-  >
-    Preview: {LABEL[$hud.previewMode]}
-  </button>
+  <div class="cluster">
+    <button
+      class="ghost"
+      title="Trajectory preview length"
+      aria-label={`Preview: ${LABEL[$hud.previewMode]}`}
+      onclick={() => game.setPreviewMode(NEXT[$hud.previewMode])}
+    >
+      Preview: {LABEL[$hud.previewMode]}
+    </button>
+    <button
+      class="ghost icon"
+      aria-pressed={$hud.muted}
+      aria-label={$hud.muted ? 'Unmute sound' : 'Mute sound'}
+      title={$hud.muted ? 'Sound off' : 'Sound on'}
+      onclick={() => game.toggleMute()}
+    >
+      {$hud.muted ? '🔇' : '🔊'}
+    </button>
+    <button
+      class="ghost icon"
+      class:on={$hud.reducedMotion}
+      aria-pressed={$hud.reducedMotion}
+      aria-label="Reduced motion"
+      title="Reduced motion"
+      onclick={() => game.toggleReducedMotion()}
+    >
+      ✷
+    </button>
+  </div>
   <span class="hint">
-    {#if $hud.status === 'flying'}Flying…{:else}Pull back & release to launch{/if}
+    {#if $hud.maxNudges > 0 && $hud.status === 'flying'}
+      Tap to nudge · {$hud.nudgesRemaining}/{$hud.maxNudges}
+    {:else if $hud.status === 'flying'}Flying…{:else}Pull back & release to launch{/if}
   </span>
   <button class="ghost" onclick={() => game.restartLevel()}>Reset</button>
 </div>
@@ -69,9 +93,24 @@
     margin-left: 6px;
     font-size: 13px;
   }
+  .cluster {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    pointer-events: none;
+  }
   .hint {
     color: var(--ink-dim);
     font-size: 13px;
+  }
+  button.ghost.icon {
+    font-size: 15px;
+    line-height: 1;
+    padding: 7px 9px;
+  }
+  button.ghost.icon.on {
+    color: #ffd166;
+    border-color: rgba(255, 209, 102, 0.4);
   }
 
   button {

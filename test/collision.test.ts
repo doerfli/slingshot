@@ -72,4 +72,30 @@ describe('collision.check', () => {
     const level = makeLevel({ hazards: [{ c: vec(200, -200), radius: 20 }] });
     expect(check(vec(-150, 100), level)).toBe('flying');
   });
+
+  it('wins against a MOVING target at its position at time t, not its base', () => {
+    const level = makeLevel({
+      bodies: [], // no gravity body in the way
+      target: { c: vec(0, 0), radius: 25, motion: { kind: 'linear', vel: vec(100, 0) } },
+    });
+    // At t=1 the target has drifted to x=100. A probe sitting at (100,0)...
+    expect(check(vec(100, 0), level, 1)).toBe('win'); // ...wins where the target now is
+    expect(check(vec(100, 0), level, 0)).toBe('flying'); // ...but not at the start
+    expect(check(vec(0, 0), level, 1)).toBe('flying'); // and the base spot is now empty
+  });
+
+  it('crashes on a MOVING body at its position at time t', () => {
+    const level = makeLevel({
+      bodies: [{ c: vec(0, 0), strength: 90000, radius: 40, motion: { kind: 'linear', vel: vec(50, 0) } }],
+      target: { c: vec(9999, 9999), radius: 5 },
+    });
+    expect(check(vec(100, 0), level, 2)).toBe('crash'); // body drifted to x=100 by t=2
+    expect(check(vec(100, 0), level, 0)).toBe('flying');
+  });
+
+  it('defaults t to 0 (static levels unaffected)', () => {
+    const level = makeLevel();
+    expect(check(vec(40, 0), level)).toBe('crash');
+    expect(check(vec(40, 0), level, 0)).toBe('crash');
+  });
 });

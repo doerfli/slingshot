@@ -27,6 +27,13 @@ export const MAX_SPEED = 407;
  */
 export const GRAVITY_SOFTENING = 8;
 
+/**
+ * Mid-course nudge impulse magnitude (world units/sec of Δv per tap). Deliberately a
+ * modest fraction of a typical launch speed — a nudge tweaks a near-miss into a hit, it
+ * doesn't re-fly the shot. Only levels that grant `nudges` expose it.
+ */
+export const NUDGE_DV = 70;
+
 /** Seconds the probe may spend outside the play bounds before the shot fails. */
 export const OFFSCREEN_GRACE = 0.4;
 

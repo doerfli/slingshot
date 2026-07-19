@@ -22,10 +22,18 @@
     <div class="sub">
       in {$hud.attempts} {$hud.attempts === 1 ? 'try' : 'tries'} · par {$hud.par}
     </div>
+
+    {#if $hud.graze}
+      <div class="badge" aria-label="Clean flyby style bonus">✦ Clean flyby</div>
+    {/if}
+    {#if $hud.styleGap != null}
+      <div class="best">Closest pass: {Math.round($hud.styleGap)}</div>
+    {/if}
+
     {#if $hud.bestAttempts != null}
       <div class="best">
         Best: {$hud.bestStars}★ in {$hud.bestAttempts}
-        {$hud.bestAttempts === 1 ? 'try' : 'tries'}
+        {$hud.bestAttempts === 1 ? 'try' : 'tries'}{#if $hud.bestGap != null} · graze {Math.round($hud.bestGap)}{/if}
       </div>
     {/if}
 
@@ -98,6 +106,14 @@
     margin-top: 2px;
     font-size: 12px;
     opacity: 0.85;
+  }
+  .badge {
+    margin-top: 8px;
+    display: inline-block;
+    color: #ffd166;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
   }
   .actions {
     display: flex;

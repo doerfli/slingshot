@@ -4,6 +4,7 @@
 // forgiving for thumb play (spec §13).
 
 import type { Game } from '../game/loop';
+import { resume as resumeAudio } from '../audio/sfx';
 
 export function attachAim(canvas: HTMLCanvasElement, game: Game): () => void {
   function pointFromEvent(e: PointerEvent): { x: number; y: number } {
@@ -13,6 +14,7 @@ export function attachAim(canvas: HTMLCanvasElement, game: Game): () => void {
 
   function onDown(e: PointerEvent): void {
     e.preventDefault();
+    resumeAudio(); // unlock Web Audio on the first gesture (mobile autoplay policy)
     canvas.setPointerCapture(e.pointerId);
     game.beginAim(pointFromEvent(e));
   }

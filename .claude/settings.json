@@ -15,7 +15,8 @@
       "Bash(export:*)",
       "Bash(cd:*)",
       "WebFetch(domain:github.com)",
-      "Bash(grep -rn 'localStorage\\\\|sessionStorage\\\\|subscribe\\\\|$hud\\\\|import.*state' /workspace/src/ui /workspace/src)"
+      "Bash(grep -rn 'localStorage\\\\|sessionStorage\\\\|subscribe\\\\|$hud\\\\|import.*state' /workspace/src/ui /workspace/src)",
+      "mcp__plugin_context-mode_context-mode__ctx_execute"
     ]
   }
 }

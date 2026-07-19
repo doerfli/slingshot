@@ -89,6 +89,67 @@ export const LEVELS: Level[] = [
     previewLength: 150,
     par: 4,
   },
+
+  // 6 — Moving target: the target orbits a point up top. Curve past the body and TIME
+  // the release so the probe arrives where the target is swinging to, not where it is.
+  {
+    id: 6,
+    name: 'Moving Target',
+    pad: vec(0, 470),
+    bodies: [
+      { c: vec(0, 120), strength: 2600000, radius: 26 },
+    ],
+    target: {
+      c: vec(150, -380),
+      radius: 40,
+      motion: { kind: 'orbit', center: vec(0, -380), radius: 150, omega: 1.0 },
+    },
+    bounds: FIELD,
+    previewLength: 150,
+    par: 4,
+  },
+
+  // 7 — True assist: a *moving* body orbits mid-field. Swing past its trailing side to
+  // steal speed (spec §5) and fling the probe to the far corner — a static flyby here
+  // only bends, it can't gain the reach.
+  {
+    id: 7,
+    name: 'True Assist',
+    pad: vec(-210, 480),
+    bodies: [
+      {
+        c: vec(90, 60),
+        strength: 3000000,
+        radius: 24,
+        motion: { kind: 'orbit', center: vec(0, 60), radius: 90, omega: 0.9 },
+      },
+    ],
+    target: { c: vec(240, -470), radius: 42 },
+    bounds: FIELD,
+    previewLength: 140,
+    par: 5,
+  },
+
+  // 8 — Asteroid field: inert asteroids block the direct lanes; steer with the well and
+  // spend the single mid-course NUDGE (tap during flight) to thread the last gap.
+  {
+    id: 8,
+    name: 'Asteroid Field',
+    pad: vec(0, 480),
+    bodies: [
+      { c: vec(-70, -40), strength: 3200000, radius: 28 },
+    ],
+    hazards: [
+      { c: vec(90, 200), radius: 34 },
+      { c: vec(120, -120), radius: 30 },
+      { c: vec(-160, -260), radius: 30 },
+    ],
+    target: { c: vec(60, -470), radius: 38 },
+    bounds: FIELD,
+    previewLength: 150,
+    par: 4,
+    nudges: 1,
+  },
 ];
 
 export function levelAt(index: number): Level {

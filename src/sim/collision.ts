@@ -1,22 +1,29 @@
 // Per-position collision test. Pure geometry: given the probe's current position and
 // the level, classify it. Time-based fails (off-screen grace, max flight time) are
 // layered on top by the game loop — this function only sees a position.
+//
+// Moving bodies/targets/hazards (Phase 3): every entity is positioned at sim time `t`
+// via the same pure functions the integrator uses (sim/bodies), so collision agrees
+// with the flown path. `t` defaults to 0, keeping static levels bit-for-bit unchanged.
 
 import type { Vec2 } from './vec';
 import { dist2 } from './vec';
 import type { Level, Outcome } from './types';
+import { positionAt } from './bodies';
 
-export function check(p: Vec2, level: Level): Outcome {
+export function check(p: Vec2, level: Level, t = 0): Outcome {
   // Reaching the target zone is a win — checked first so a target sitting near a
   // body still registers.
-  if (dist2(p, level.target.c) <= level.target.radius * level.target.radius) {
+  const tc = positionAt(level.target.c, level.target.motion, t);
+  if (dist2(p, tc) <= level.target.radius * level.target.radius) {
     return 'win';
   }
 
-  // Any body surface: crash, unless that body is itself the target.
+  // Any body surface: crash, unless that body is itself the target. Fixed order.
   for (let i = 0; i < level.bodies.length; i++) {
     const b = level.bodies[i];
-    if (dist2(p, b.c) <= b.radius * b.radius) {
+    const bc = positionAt(b.c, b.motion, t);
+    if (dist2(p, bc) <= b.radius * b.radius) {
       return b.isTarget ? 'win' : 'crash';
     }
   }
@@ -25,7 +32,8 @@ export function check(p: Vec2, level: Level): Outcome {
   if (level.hazards) {
     for (let i = 0; i < level.hazards.length; i++) {
       const h = level.hazards[i];
-      if (dist2(p, h.c) <= h.radius * h.radius) {
+      const hc = positionAt(h.c, h.motion, t);
+      if (dist2(p, hc) <= h.radius * h.radius) {
         return 'crash';
       }
     }

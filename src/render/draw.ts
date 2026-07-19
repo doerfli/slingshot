@@ -4,7 +4,7 @@
 // (a ringed marker) — not just its color — distinguishes it from hazards (spec §13).
 
 import type { Vec2 } from '../sim/vec';
-import type { Level } from '../sim/types';
+import type { Body, Hazard, Level, Target } from '../sim/types';
 import type { ProbeState } from '../sim/probe';
 import { fitToField, worldToScreen, worldLenToScreen, type Camera } from './camera';
 
@@ -25,6 +25,12 @@ const COLORS = {
 
 export interface RenderState {
   level: Level;
+  /** Bodies/target/hazards positioned at the current sim time (moving elements move).
+   *  The loop computes these once per frame via sim/bodies; draw only reads them, so
+   *  the render never re-derives motion. `level` still supplies the fixed pad + bounds. */
+  bodies: Body[];
+  target: Target;
+  hazards?: Hazard[];
   /** Live probe (during and after flight, to keep the final trail on screen). */
   probe: ProbeState | null;
   /** Predicted world-space points, already trimmed to the level's preview length. */
@@ -51,17 +57,17 @@ export function drawScene(
 ): Camera {
   const cam = fitToField(rs.level.bounds, cssW, cssH);
 
-  drawBodies(ctx, cam, rs.level);
-  drawHazards(ctx, cam, rs.level);
-  drawTarget(ctx, cam, rs.level);
+  drawBodies(ctx, cam, rs.bodies);
+  drawHazards(ctx, cam, rs.hazards);
+  drawTarget(ctx, cam, rs.target);
   drawPad(ctx, cam, rs.level.pad);
 
   if (rs.probe) {
     // A shot is (or was) in flight: show its trail + the probe.
     drawTrail(ctx, cam, rs.probe.trail);
-    if (rs.closestPoint) drawNearMiss(ctx, cam, rs.closestPoint, rs.level.target.c);
+    if (rs.closestPoint) drawNearMiss(ctx, cam, rs.closestPoint, rs.target.c);
     const speed = Math.hypot(rs.probe.v.x, rs.probe.v.y);
-    drawProbe(ctx, cam, rs.probe.p, rs.probe.v, speed);
+    drawProbe(ctx, cam, rs.probe.p, rs.probe.v, speed, rs.reducedMotion ?? false);
   } else {
     // Idle / aiming: preview + heading arrow + the ship sitting on the pad, so it's
     // obvious *this* is the thing you launch.
@@ -73,8 +79,8 @@ export function drawScene(
   return cam;
 }
 
-function drawBodies(ctx: CanvasRenderingContext2D, cam: Camera, level: Level): void {
-  for (const b of level.bodies) {
+function drawBodies(ctx: CanvasRenderingContext2D, cam: Camera, bodies: Body[]): void {
+  for (const b of bodies) {
     if (b.isTarget) continue; // a target body is drawn as the target, not a hazard
     const s = worldToScreen(cam, b.c);
     const r = worldLenToScreen(cam, b.radius);
@@ -119,10 +125,10 @@ function wobble(seed: number): number {
  * unlike the smooth gravity discs and the ringed target — so target vs hazard reads by
  * SHAPE, not color (spec §13, colorblind-safe).
  */
-function drawHazards(ctx: CanvasRenderingContext2D, cam: Camera, level: Level): void {
-  if (!level.hazards) return;
+function drawHazards(ctx: CanvasRenderingContext2D, cam: Camera, hazards: Hazard[] | undefined): void {
+  if (!hazards) return;
   const VERTS = 9;
-  for (const h of level.hazards) {
+  for (const h of hazards) {
     const s = worldToScreen(cam, h.c);
     const r = worldLenToScreen(cam, h.radius);
 
@@ -166,9 +172,9 @@ function drawNearMiss(ctx: CanvasRenderingContext2D, cam: Camera, closest: Vec2,
   ctx.restore();
 }
 
-function drawTarget(ctx: CanvasRenderingContext2D, cam: Camera, level: Level): void {
-  const s = worldToScreen(cam, level.target.c);
-  const r = worldLenToScreen(cam, level.target.radius);
+function drawTarget(ctx: CanvasRenderingContext2D, cam: Camera, target: Target): void {
+  const s = worldToScreen(cam, target.c);
+  const r = worldLenToScreen(cam, target.radius);
 
   // Distinct SHAPE: a thin double ring + small center dot (reads even if color is
   // lost). Kept fine-lined so it looks like a target zone, not a solid body.
@@ -303,34 +309,38 @@ function drawProbe(
   p: Vec2,
   v: Vec2,
   speed: number,
+  reducedMotion: boolean,
 ): void {
   const s = worldToScreen(cam, p);
 
   // Speed feedback: the faster the probe (e.g. whipping past a planet), the longer its
   // motion streak and the brighter its glow — so you can SEE it accelerate, not just bend.
+  // Reduced-motion drops the streak + glow flourishes (spec §13) — the probe stays fully
+  // legible as a solid disc; only the animated embellishment is removed.
   const t = Math.max(0, Math.min(1, (speed - 150) / 550)); // 0 at ~150 u/s → 1 at ~700
-  const glow = 14 + t * 24;
-  const streakLen = (14 + t * 46) * (v.x || v.y ? 1 : 0);
-  const speedMag = Math.hypot(v.x, v.y) || 1;
 
-  // Streak trailing behind the direction of travel.
-  const tailX = s.x - (v.x / speedMag) * streakLen;
-  const tailY = s.y - (v.y / speedMag) * streakLen;
-  const streak = ctx.createLinearGradient(s.x, s.y, tailX, tailY);
-  streak.addColorStop(0, COLORS.probe);
-  streak.addColorStop(1, 'rgba(106,210,255,0)');
-  ctx.strokeStyle = streak;
-  ctx.lineWidth = 3;
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(s.x, s.y);
-  ctx.lineTo(tailX, tailY);
-  ctx.stroke();
+  if (!reducedMotion) {
+    const streakLen = (14 + t * 46) * (v.x || v.y ? 1 : 0);
+    const speedMag = Math.hypot(v.x, v.y) || 1;
+    // Streak trailing behind the direction of travel.
+    const tailX = s.x - (v.x / speedMag) * streakLen;
+    const tailY = s.y - (v.y / speedMag) * streakLen;
+    const streak = ctx.createLinearGradient(s.x, s.y, tailX, tailY);
+    streak.addColorStop(0, COLORS.probe);
+    streak.addColorStop(1, 'rgba(106,210,255,0)');
+    ctx.strokeStyle = streak;
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(s.x, s.y);
+    ctx.lineTo(tailX, tailY);
+    ctx.stroke();
+  }
 
-  // Bright glowing comet head.
+  // Bright comet head (the glow is a flourish; reduced-motion keeps a crisp disc).
   ctx.fillStyle = '#eaf7ff';
   ctx.shadowColor = COLORS.probe;
-  ctx.shadowBlur = glow;
+  ctx.shadowBlur = reducedMotion ? 0 : 14 + t * 24;
   ctx.beginPath();
   ctx.arc(s.x, s.y, 7, 0, Math.PI * 2);
   ctx.fill();
