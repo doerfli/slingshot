@@ -1,0 +1,38 @@
+version: 2
+updates:
+  # JavaScript deps — package.json / bun.lock live in the npm ecosystem
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 3
+    open-pull-requests-limit: 10
+    ignore:
+      # svelte-check 4.x can't run under the TS 7 native compiler yet;
+      # hold TypeScript on the 5.x line until the tooling catches up.
+      - dependency-name: typescript
+        versions:
+          - ">=6.0.0"
+    groups:
+      # One PR for routine minor/patch bumps to cut review noise
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  # Base images referenced in the Dockerfile (oven/bun, nginx)
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 3
+
+  # GitHub Actions used in the workflows above
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    cooldown:
+      default-days: 3
