@@ -2,7 +2,7 @@
 # carries only the compiled `dist/` + nginx — no Bun, no node_modules, no source.
 
 # --- build stage -----------------------------------------------------------------
-FROM oven/bun:1.3-alpine AS build
+FROM oven/bun:1.4-alpine AS build
 WORKDIR /app
 
 # Install deps first (cached until the lockfile changes). --frozen-lockfile makes the
